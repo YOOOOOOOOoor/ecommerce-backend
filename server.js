@@ -11,6 +11,8 @@ dotenv.config();
 
 const app = express();
 
+const PORT = process.env.PORT || 3000;
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(
@@ -24,6 +26,6 @@ app.use("/api/products", productsRoutes);
 app.use("/api/seller", sellerRoutes);
 app.use("/api/carts", cartsRoutes);
 
-app.listen(3000, () => {
-  console.log("server is running at http://localhost:3000");
+app.listen(PORT, () => {
+  console.log("Server running on port", PORT);
 });
