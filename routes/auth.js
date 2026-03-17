@@ -9,12 +9,10 @@ dotenv.config();
 
 const router = express.Router();
 
-// server.js / auth.js
 const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production", // secure only in production
   sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax", // None in prod, Lax locally
-
   maxAge: 24 * 60 * 60 * 1000 * 30, // 30 days
 };
 
