@@ -11,9 +11,9 @@ const router = express.Router();
 
 const cookieOptions = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "Strict",
-  maxAge: 24 * 60 * 60 * 1000 * 30,
+  secure: process.env.NODE_ENV === "production", // only secure in prod
+  sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+  maxAge: 24 * 60 * 60 * 1000 * 30, // 30 days
 };
 
 const tokenGenerate = (id, role) => {
