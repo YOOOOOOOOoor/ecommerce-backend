@@ -13,11 +13,27 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// CORS for frontend
+const allowedOrigins = [
+  "https://ecommerce-frontend-omega-taupe.vercel.app", // production
+];
+
 app.use(
   cors({
-   origin: /\.vercel\.app$/, // allow all subdomains of vercel.app
-    credentials: true, // allow cookies
+    origin: function (origin, callback) {
+      // allow requests with no origin (like Postman or server-to-server)
+      if (!origin) return callback(null, true);
+
+      // allow production + any Vercel preview URLs
+      if (
+        allowedOrigins.includes(origin) ||
+        /\.vercel\.app$/.test(origin) // matches any subdomain ending with .vercel.app
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true, // required for cookies
   })
 );
 
