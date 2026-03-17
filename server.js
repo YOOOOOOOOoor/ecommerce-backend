@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 3000;
 // CORS for frontend
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+   origin: /\.vercel\.app$/, // allow all subdomains of vercel.app
     credentials: true, // allow cookies
   })
 );
