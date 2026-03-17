@@ -53,7 +53,7 @@ router.post("/", protect, async (req, res) => {
     // const numberPrice = Number(price);
     const seller = await pool.query(
       `insert into products(name,description,price,image,category,seller_id) values($1,$2,$3,$4,$5,$6) returning *`,
-      [name, description, price, image, category, req.user.id],
+      [name, description, Number(price), image, category, req.user.id],
     );
 
     res.status(201).json({
@@ -67,6 +67,7 @@ router.post("/", protect, async (req, res) => {
       },
     });
   } catch (error) {
+    console.error("Error inserting product:", error);
     res.status(500).json({ message: error.message });
   }
 });
