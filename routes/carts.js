@@ -48,4 +48,53 @@ router.delete("/delete/:id", protect, async (req, res) => {
   }
 });
 
+//decrease
+router.put("/decrease/:id", protect, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check current quantity
+    const check = await pool.query(
+      "SELECT quantity FROM carts WHERE id = $1 AND users_id = $2",
+      [id, req.user.id],
+    );
+
+    if (check.rows.length === 0) {
+      return res.status(404).json({ msg: "Item not found" });
+    }
+
+    const quantity = check.rows[0].quantity;
+
+    if (quantity > 1) {
+      // Decrease quantity
+      const updated = await pool.query(
+        `
+        UPDATE carts
+        SET quantity = quantity - 1
+        WHERE id = $1 AND users_id = $2
+        RETURNING *
+        `,
+        [id, req.user.id],
+      );
+
+      return res.json({
+        msg: "Quantity decreased",
+        cartItem: updated.rows[0],
+      });
+    } else {
+      // If quantity = 1 → delete item
+      await pool.query("DELETE FROM carts WHERE id = $1 AND users_id = $2", [
+        id,
+        req.user.id,
+      ]);
+
+      return res.json({
+        msg: "Item removed from cart",
+      });
+    }
+  } catch (error) {
+    console.error(error.message);
+    res.status(500).json({ msg: "Server error" });
+  }
+});
 export default router;
