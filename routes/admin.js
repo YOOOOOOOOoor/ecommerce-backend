@@ -9,7 +9,7 @@ const checkAdmin = (req, res, next) => {
   if (
     req.user &&
     req.user.role === "admin" &&
-    req.user.email === "admindDwM7@example.com"
+    req.user.email === "admin@example.com"
   ) {
     next();
   } else {
