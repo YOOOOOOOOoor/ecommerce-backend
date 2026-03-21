@@ -8,6 +8,7 @@ import productsRoutes from "./routes/products.js";
 import sellerRoutes from "./routes/seller.js";
 import cartsRoutes from "./routes/carts.js";
 import AdminRoutes from "./routes/admin.js";
+import seedAdmin from "./routes/seedAdmin.js";
 
 dotenv.config();
 
@@ -62,4 +63,5 @@ app.get("/api/test-db", async (req, res) => {
   }
 });
 
+seedAdmin();
 app.listen(PORT, () => console.log("Server running on port", PORT));
