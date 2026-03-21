@@ -26,10 +26,43 @@ const checkAdmin = (req, res, next) => {
 
 router.get("/products", protect, checkAdmin, async (req, res) => {
   try {
-    const products = await pool.query(
-      "select users.name as seller_name, products.* from users join products on users.id = products.seller_id",
+    const { category, search, limit = 3, page = 1 } = req.query;
+    const NumberLimit = Number(limit);
+    const NumberPage = Number(page);
+    const offset = (NumberPage - 1) * NumberLimit;
+
+    let query = `select users.name as seller_name, products.* from users join products on users.id = products.seller_id where 1=1`;
+    let countQuery = `select count(*) as total from products where 1=1`;
+    const values = [];
+
+    if (category && category !== "all") {
+      values.push(`%${category}%`);
+      query += ` and products.category ilike $${values.length}`;
+      countQuery += ` and products.category ilike $${values.length}`;
+    }
+    if (search) {
+      values.push(`%${search}%`);
+      query += ` and products.name ilike $${values.length}`;
+      countQuery += ` and products.name ilike $${values.length}`;
+    }
+
+    values.push(NumberLimit, offset);
+
+    query += `  limit $${values.length - 1} offset $${values.length}`;
+
+    const totalResult = await pool.query(
+      countQuery,
+      values.slice(0, values.length - 2),
     );
-    res.status(200).json(products.rows);
+    const total = Number(totalResult.rows[0].total);
+
+    const products = await pool.query(query, values);
+    res.json({
+      product: products.rows,
+      total,
+      page: NumberPage,
+      totalPages: Math.ceil(total / NumberLimit) || 1,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -93,8 +126,8 @@ router.post("/products/add", protect, checkAdmin, async (req, res) => {
       return res.status(400).json({ message: "Please fill all the fields" });
     }
     const result = await pool.query(
-      "INSERT INTO products (name, description, price, image, category) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-      [name, description, price, image, category],
+      "INSERT INTO products (name, description, price, image, category, seller_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *",
+      [name, description, price, image, category, req.user.id],
     );
     res.status(200).json(result.rows[0]);
   } catch (error) {
@@ -112,8 +145,38 @@ router.post("/products/add", protect, checkAdmin, async (req, res) => {
 
 router.get("/users", protect, checkAdmin, async (req, res) => {
   try {
-    const users = await pool.query("select * from users");
-    res.status(200).json(users.rows);
+    const { search, page = 1, limit = 3 } = req.query;
+    const NumberLimit = Number(limit);
+    const NumberPage = Number(page);
+    const offset = (NumberPage - 1) * NumberLimit;
+
+    let query = `select * from users where 1=1`;
+    let countQuery = `select count(*) as total from users where 1=1`;
+    let values = [];
+
+    if (search) {
+      values.push(`%${search}%`);
+      query += ` and name ilike $${values.length} `;
+      countQuery += ` and name ilike $${values.length} `;
+    }
+
+    values.push(NumberLimit, offset);
+    query += ` order by created_at desc limit $${values.length - 1} offset $${values.length}`;
+
+    const toalResult = await pool.query(
+      countQuery,
+      values.slice(0, values.length - 2),
+    );
+    const total = Number(toalResult.rows[0].total);
+
+    const users = await pool.query(query, values);
+
+    res.status(200).json({
+      users: users.rows,
+      total,
+      page: NumberPage,
+      totalPages: Math.ceil(total / NumberLimit) || 1,
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
