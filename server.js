@@ -41,6 +41,9 @@ app.use(
 
 app.use(cookieParser());
 app.use(express.json());
+app.get("/test", (req, res) => {
+  res.json({ ok: true });
+});
 
 // Routes
 app.use("/api/auth", authRoutes);
