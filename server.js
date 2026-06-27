@@ -16,7 +16,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 const allowedOrigins = [
-  process.env.CLIENT_URL, // production frontend
+  process.env.CLIENT_URL,
+  "https://ecommerce-frontend-omega-taupe.vercel.app",
 ];
 
 app.use(
