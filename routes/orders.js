@@ -5,6 +5,12 @@ import pool from "../config/db.js";
 
 const router = express.Router();
 
+router.get("/", (req, res) => {
+  res.json({
+    message: "Orders route working",
+  });
+});
+
 router.post("/", protect, async (req, res) => {
   const client = await pool.connect();
 
