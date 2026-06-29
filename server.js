@@ -9,6 +9,7 @@ import sellerRoutes from "./routes/seller.js";
 import cartsRoutes from "./routes/carts.js";
 import AdminRoutes from "./routes/admin.js";
 import seedAdmin from "./routes/seedAdmin.js";
+import orderRoutes from "./routes/orders.js";
 
 dotenv.config();
 
@@ -52,6 +53,7 @@ app.use("/api/products", productsRoutes);
 app.use("/api/seller", sellerRoutes);
 app.use("/api/carts", cartsRoutes);
 app.use("/api/admin", AdminRoutes);
+app.use("/api/orders", orderRoutes);
 
 app.get("/", (req, res) => {
   res.send("API is running 🚀");
