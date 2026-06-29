@@ -40,14 +40,14 @@ router.get("/", async (req, res) => {
     }
 
     value.push(numberLimit, offset);
-    query += ` order by products.created_at desc  limit $${value.length - 1} offset $${value.length}`;
+    query += ` order by products.created_at desc limit $${value.length - 1} offset $${value.length}`;
 
     const totalResult = await pool.query(
       countQuery,
-      value.slice(0, value.length - 2), // CHANGE 1: only pass filter values to count query
+      value.slice(0, value.length - 2),
     );
 
-    const total = Number(totalResult.rows[0].total); // This is to return the total number of products that matches the filtering criteria
+    const total = Number(totalResult.rows[0].total);
     const products = await pool.query(query, value);
 
     res.json({
@@ -61,32 +61,39 @@ router.get("/", async (req, res) => {
   }
 });
 
-//only one
+// Get one product
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
+
     const product = await pool.query(
-      "select users.name as seller_name, products.* from users join products on users.id = products.seller_id where products.id=$1",
+      `SELECT users.name AS seller_name, products.*
+       FROM users
+       JOIN products ON users.id = products.seller_id
+       WHERE products.id = $1`,
       [id],
     );
+
     if (product.rows.length === 0) {
       return res.status(404).json({ message: "No product found" });
     }
+
     res.json(product.rows[0]);
   } catch (error) {
     console.error(error.message);
+    res.status(500).json({ msg: "Server error" });
   }
 });
 
-//adding
+// Add to cart
 router.post("/add", protect, async (req, res) => {
   try {
     const { id } = req.body;
 
     const result = await pool.query(
-      `INSERT INTO carts (users_id, products_id, quantity)
+      `INSERT INTO carts (user_id, product_id, quantity)
        VALUES ($1, $2, 1)
-       ON CONFLICT (users_id, products_id)
+       ON CONFLICT (user_id, product_id)
        DO UPDATE SET quantity = carts.quantity + 1
        RETURNING *`,
       [req.user.id, id],
@@ -98,6 +105,7 @@ router.post("/add", protect, async (req, res) => {
     });
   } catch (error) {
     console.error(error.message);
+    res.status(500).json({ msg: error.message });
   }
 });
 
