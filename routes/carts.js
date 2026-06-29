@@ -5,57 +5,64 @@ import protect from "../middleware/auth.js";
 
 const router = express.Router();
 
-//show all products
+// Show all products in cart
 router.get("/", protect, async (req, res) => {
   try {
     const products = await pool.query(
       `
-
-    select 
-    carts.id as cart_id,
-    products.*,
-    carts.quantity,
-    (products.price * carts.quantity) as total_price
-from carts
-join products on carts.products_id = products.id
-where carts.users_id = $1 order by created_at
-      
-        `,
+      SELECT
+        carts.id AS cart_id,
+        products.*,
+        carts.quantity,
+        (products.price * carts.quantity) AS total_price
+      FROM carts
+      JOIN products ON carts.product_id = products.id
+      WHERE carts.user_id = $1
+      ORDER BY carts.created_at
+      `,
       [req.user.id],
     );
 
     res.json({ products: products.rows });
   } catch (error) {
     console.error(error.message);
+    res.status(500).json({ msg: "Server error" });
   }
 });
 
-//delete
+// Delete item from cart
 router.delete("/delete/:id", protect, async (req, res) => {
   try {
     const { id } = req.params;
+
     const checkProduct = await pool.query(
-      "select * from carts where id=$1 and users_id=$2",
+      "SELECT * FROM carts WHERE id = $1 AND user_id = $2",
       [id, req.user.id],
     );
+
     if (checkProduct.rows.length === 0) {
-      return res.status(200).json({ message: "Product not found" });
+      return res.status(404).json({ message: "Product not found" });
     }
-    await pool.query("delete from carts where id=$1", [id]);
-    res.status(200).json({ message: "Product deleted successfully" });
+
+    await pool.query(
+      "DELETE FROM carts WHERE id = $1 AND user_id = $2",
+      [id, req.user.id],
+    );
+
+    res.json({ message: "Product deleted successfully" });
   } catch (error) {
     console.error(error.message);
+    res.status(500).json({ msg: "Server error" });
   }
 });
 
-//decrease
+// Decrease quantity
 router.put("/decrease/:id", protect, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Check current quantity
     const check = await pool.query(
-      "SELECT quantity FROM carts WHERE id = $1 AND users_id = $2",
+      "SELECT quantity FROM carts WHERE id = $1 AND user_id = $2",
       [id, req.user.id],
     );
 
@@ -66,12 +73,11 @@ router.put("/decrease/:id", protect, async (req, res) => {
     const quantity = check.rows[0].quantity;
 
     if (quantity > 1) {
-      // Decrease quantity
       const updated = await pool.query(
         `
         UPDATE carts
         SET quantity = quantity - 1
-        WHERE id = $1 AND users_id = $2
+        WHERE id = $1 AND user_id = $2
         RETURNING *
         `,
         [id, req.user.id],
@@ -81,20 +87,20 @@ router.put("/decrease/:id", protect, async (req, res) => {
         msg: "Quantity decreased",
         cartItem: updated.rows[0],
       });
-    } else {
-      // If quantity = 1 → delete item
-      await pool.query("DELETE FROM carts WHERE id = $1 AND users_id = $2", [
-        id,
-        req.user.id,
-      ]);
-
-      return res.json({
-        msg: "Item removed from cart",
-      });
     }
+
+    await pool.query(
+      "DELETE FROM carts WHERE id = $1 AND user_id = $2",
+      [id, req.user.id],
+    );
+
+    return res.json({
+      msg: "Item removed from cart",
+    });
   } catch (error) {
     console.error(error.message);
     res.status(500).json({ msg: "Server error" });
   }
 });
+
 export default router;
