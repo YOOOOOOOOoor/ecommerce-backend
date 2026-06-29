@@ -121,6 +121,15 @@ router.post("/", protect, async (req, res) => {
   } finally {
     client.release();
   }
+  console.log("POST /api/orders hit");
+
+console.log("User:", req.user);
+
+console.log("Cart Items:", cartItems);
+
+console.log("Total Price:", totalPrice);
+
+console.log("Order Created:", order);
 });
 
 export default router;
