@@ -12,6 +12,9 @@ router.get("/", (req, res) => {
 });
 
 router.post("/", protect, async (req, res) => {
+  console.log("POST /api/orders hit");
+  console.log("User:", req.user);
+
   const client = await pool.connect();
 
   try {
@@ -27,28 +30,27 @@ router.post("/", protect, async (req, res) => {
         c.quantity,
         p.price
       FROM carts c
-      JOIN products p
-      ON p.id = c.product_id
+      JOIN products p ON p.id = c.product_id
       WHERE c.user_id = $1
       `,
-      [userId],
+      [userId]
     );
 
     const cartItems = cartResult.rows;
+    console.log("Cart Items:", cartItems);
 
     if (cartItems.length === 0) {
       await client.query("ROLLBACK");
-      return res.status(400).json({
-        message: "Cart is empty",
-      });
+      return res.status(400).json({ message: "Cart is empty" });
     }
 
     // Calculate total
     let totalPrice = 0;
-
     for (const item of cartItems) {
       totalPrice += Number(item.price) * item.quantity;
     }
+
+    console.log("Total Price:", totalPrice);
 
     // Create order
     const orderResult = await client.query(
@@ -63,16 +65,11 @@ router.post("/", protect, async (req, res) => {
       VALUES ($1,$2,$3,$4,$5)
       RETURNING *
       `,
-      [
-        userId,
-        totalPrice,
-        "telebirr",
-        "pending",
-        "pending",
-      ],
+      [userId, totalPrice, "telebirr", "pending", "pending"]
     );
 
     const order = orderResult.rows[0];
+    console.log("Order Created:", order);
 
     // Create order items
     for (const item of cartItems) {
@@ -86,23 +83,11 @@ router.post("/", protect, async (req, res) => {
         )
         VALUES ($1,$2,$3,$4)
         `,
-        [
-          order.id,
-          item.product_id,
-          item.quantity,
-          item.price,
-        ],
+        [order.id, item.product_id, item.quantity, item.price]
       );
     }
 
-    // Clear cart
-    await client.query(
-      `
-      DELETE FROM carts
-      WHERE user_id = $1
-      `,
-      [userId],
-    );
+    await client.query("DELETE FROM carts WHERE user_id = $1", [userId]);
 
     await client.query("COMMIT");
 
@@ -115,21 +100,10 @@ router.post("/", protect, async (req, res) => {
     await client.query("ROLLBACK");
     console.error(err);
 
-    res.status(500).json({
-      message: "Server Error",
-    });
+    res.status(500).json({ message: "Server Error" });
   } finally {
     client.release();
   }
-  console.log("POST /api/orders hit");
-
-console.log("User:", req.user);
-
-console.log("Cart Items:", cartItems);
-
-console.log("Total Price:", totalPrice);
-
-console.log("Order Created:", order);
 });
 
 export default router;
